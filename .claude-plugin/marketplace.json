@@ -1,0 +1,19 @@
+{
+  "name": "audiobook-curator-marketplace",
+  "owner": {
+    "name": "ScriptedAlchemy",
+    "url": "https://github.com/ScriptedAlchemy"
+  },
+  "metadata": {
+    "description": "A single-plugin marketplace for safe, evidence-backed audiobook curation."
+  },
+  "plugins": [
+    {
+      "name": "audiobook-curator",
+      "source": "./",
+      "description": "Inventory, identify, convert, enrich, and verify audiobooks as receipt-backed M4B files.",
+      "version": "0.1.0",
+      "keywords": ["audiobook", "m4b", "ffmpeg", "audible", "whisper", "audiolocate"]
+    }
+  ]
+}

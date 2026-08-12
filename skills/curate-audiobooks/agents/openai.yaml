@@ -1,0 +1,7 @@
+interface:
+  display_name: "Audiobook Curator"
+  short_description: "Safely curate and validate M4B audiobooks"
+  default_prompt: "Use $curate-audiobooks to audit and curate an audiobook into a verified M4B."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "audiobook-curator",
+  "version": "0.1.0",
+  "description": "Safely inventory, identify, convert, enrich, and verify audiobooks as receipt-backed M4B files.",
+  "author": {
+    "name": "ScriptedAlchemy",
+    "url": "https://github.com/ScriptedAlchemy"
+  },
+  "homepage": "https://github.com/ScriptedAlchemy/audiobook-curator",
+  "repository": "https://github.com/ScriptedAlchemy/audiobook-curator",
+  "license": "MIT",
+  "keywords": ["audiobook", "m4b", "ffmpeg", "audible", "whisper", "audiolocate"]
+}

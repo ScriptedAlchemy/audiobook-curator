@@ -1,0 +1,28 @@
+{
+  "name": "audiobook-curator",
+  "version": "0.1.0",
+  "description": "Safely inventory, identify, convert, enrich, and verify audiobooks as receipt-backed M4B files.",
+  "author": {
+    "name": "ScriptedAlchemy",
+    "url": "https://github.com/ScriptedAlchemy"
+  },
+  "homepage": "https://github.com/ScriptedAlchemy/audiobook-curator#readme",
+  "repository": "https://github.com/ScriptedAlchemy/audiobook-curator",
+  "license": "MIT",
+  "keywords": ["audiobook", "m4b", "ffmpeg", "audible", "whisper", "audiolocate"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Audiobook Curator",
+    "shortDescription": "Safely curate and verify M4B audiobooks.",
+    "longDescription": "Build evidence-backed M4B audiobooks with source selection, metadata, acoustic and speech checks, chapters, artwork, full-decode validation, and SHA-256 receipts.",
+    "developerName": "ScriptedAlchemy",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/ScriptedAlchemy/audiobook-curator",
+    "defaultPrompt": [
+      "Audit this audiobook source without changing it.",
+      "Plan a verified single-M4B conversion.",
+      "Check this M4B's identity, chapters, and integrity."
+    ]
+  }
+}

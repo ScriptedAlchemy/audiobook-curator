@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -eu
+PLUGIN_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+if [ -x "$PLUGIN_ROOT/.venv/bin/python" ]; then
+  PYTHONPATH="$PLUGIN_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" exec "$PLUGIN_ROOT/.venv/bin/python" -m audiobook_curator.cli "$@"
+fi
+PYTHONPATH="$PLUGIN_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m audiobook_curator.cli "$@"
