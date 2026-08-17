@@ -12,7 +12,7 @@
       "name": "audiobook-curator",
       "source": "./",
       "description": "Inventory, identify, convert, enrich, and verify audiobooks as receipt-backed M4B files.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "keywords": ["audiobook", "m4b", "ffmpeg", "audible", "whisper", "audiolocate"]
     }
   ]

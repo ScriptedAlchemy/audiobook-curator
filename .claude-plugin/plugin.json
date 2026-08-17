@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "audiobook-curator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Safely inventory, identify, convert, enrich, and verify audiobooks as receipt-backed M4B files.",
   "author": {
     "name": "ScriptedAlchemy",

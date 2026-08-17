@@ -7,29 +7,37 @@ The governing idea is simple: discovery is not identity, identity is not integri
 ## What it covers
 
 - recursive source inventory with ffprobe facts
-- deterministic quality selection across normalized filename collisions
+- whole-library summaries for missing metadata, artwork, long-file chapters, probe failures, duplicate candidates, and multipart groups
+- deterministic quality selection from probed codec, bit depth, sample rate, and bitrate; material duration conflicts are flagged for review
 - natural source order and one chapter per selected input
 - dry-run conversion plans; `--apply` is required to create media
-- single AAC/M4B output while retaining all source files
+- single M4B output while retaining all source files
 - filesystem-safe output names with apostrophes removed, while embedded metadata retains correct punctuation
 - Audible multi-region candidate search, scoring, response caching, artwork, and chapter metadata
+- explicit human-reviewed Audible candidate selection receipts with language, narrator, runtime, and abridgement evidence
 - bounded/retrying downloads (`curl` has connect timeout, total timeout, and retry limits)
 - optional Audiolocate sample-to-local acoustic verification
-- optional whisper.cpp transcription at 5%, 27.5%, 50%, 72.5%, and 95% for language and identity review
+- optional whisper.cpp transcription at five distributed positions, with additional bounded windows until three usable excerpts are found or the configured cap is exhausted
+- generic reviewed chapter application, including Audible chapter payloads, using stream-copy and verified atomic replacement
+- verified metadata updates that preserve existing cover art when no replacement is supplied
+- optional Audiobook Forge `source`-quality conversion engine
+- automatic stream-copy for a single existing M4B instead of needless audio transcoding
 - chapter title, order, positive-duration, continuity, first-boundary, and media-end validation
+- optional source-to-output chapter title/order/boundary validation against the conversion receipt
 - optional full decode plus file SHA-256, audio-stream SHA-256, and byte-size receipts
 
 ## Safety model
 
-`inventory`, `select`, `audible-search`, `audible-cache`, `acoustic-verify`, `whisper-verify`, and `audit` never alter source media. They may write only the report or cache path explicitly supplied.
+`inventory`, `library-audit`, `select`, `audible-search`, `audible-select`, `audible-cache`, `acoustic-verify`, `whisper-verify`, and `audit` never alter source media. They may write only the report or cache path explicitly supplied.
 
-`convert` is a dry run unless `--apply` is present. It never deletes or renames inputs. It refuses to replace an existing derived output unless `--overwrite` is also explicit. Keep plans, applied receipts, and final audits together so future checks can reproduce exactly what was selected and emitted.
+`convert`, `apply-metadata`, and `apply-chapters` are dry runs unless `--apply` is present. Conversion never deletes or renames inputs. Metadata and chapter commands are intended only for a user-approved derived M4B; they create a same-directory temporary replacement and promote it only after audio hash, duration, chapters, tags, and artwork pass the applicable checks. Keep plans, applied receipts, and final audits together.
 
 ## Dependencies
 
 - Python 3.11+
 - ffmpeg and ffprobe
 - curl
+- optional: Audiobook Forge 2.11 or newer for `convert --engine audiobook-forge`
 - optional: `audiolocate`
 - optional: `whisper-cli` from whisper.cpp and a user-supplied ggml model
 
@@ -46,8 +54,9 @@ The script checks system executables, creates an isolated `.venv`, and installs 
 Inventory and select sources:
 
 ```bash
-audiobook-curator inventory ./source-book --report receipts/inventory.json
-audiobook-curator select \
+./bin/audiobook-curator library-audit ./audiobook-library --report receipts/library-audit.json
+./bin/audiobook-curator inventory ./source-book --report receipts/inventory.json
+./bin/audiobook-curator select \
   --inventory receipts/inventory.json \
   --report receipts/selection.json
 ```
@@ -55,14 +64,20 @@ audiobook-curator select \
 Find and cache a reviewed identity candidate:
 
 ```bash
-audiobook-curator audible-search \
+./bin/audiobook-curator audible-search \
   --title "Gerald's Game" \
   --author "Stephen King" \
+  --narrator "Example Narrator" \
   --duration 11160 \
   --regions us,uk \
   --report receipts/audible-candidates.json
 
-audiobook-curator audible-cache \
+./bin/audiobook-curator audible-select \
+  --candidates receipts/audible-candidates.json \
+  --candidate 2 \
+  --receipt receipts/audible-selection.json
+
+./bin/audiobook-curator audible-cache \
   --asin EXAMPLEASIN \
   --region us \
   --cache-dir cache/audible \
@@ -73,12 +88,12 @@ Optional edition and speech checks:
 
 ```bash
 ./.venv/bin/python -m pip install -e '.[acoustic]'
-audiobook-curator acoustic-verify \
+./bin/audiobook-curator acoustic-verify \
   --file ./candidate.m4b \
   --asin EXAMPLEASIN \
   --receipt receipts/acoustic.json
 
-audiobook-curator whisper-verify \
+./bin/audiobook-curator whisper-verify \
   --file ./candidate.m4b \
   --model ./models/ggml-small.bin \
   --title "Gerald's Game" \
@@ -86,34 +101,45 @@ audiobook-curator whisper-verify \
   --receipt receipts/whisper.json
 ```
 
-Plan application of the reviewed cached product to an existing derived M4B, then repeat with `--apply`. The update is staged to a temporary file and promoted only if the audio-stream hash, duration, and chapter count remain unchanged:
+Plan the conversion first. The apostrophe remains in the embedded title even though it is absent from the output filename:
 
 ```bash
-audiobook-curator apply-metadata \
-  --file ./candidate.m4b \
+./bin/audiobook-curator convert \
+  --selection receipts/selection.json \
+  --output "./library/Geralds Game.m4b" \
+  --title "Gerald's Game" \
+  --author "Stephen King" \
+  --narrator "Example Narrator" \
+  --language eng \
+  --artwork cache/audible/us-EXAMPLEASIN/cover.jpg \
+  --engine audiobook-forge \
+  --receipt receipts/conversion-plan.json
+```
+
+After reviewing the plan, repeat it with `--apply` and a new receipt path. First audit the source-derived title/order/boundary mapping with `--conversion-receipt`. Then plan application of the reviewed cached product and cover to the derived M4B:
+
+```bash
+./bin/audiobook-curator apply-metadata \
+  --file "./library/Geralds Game.m4b" \
   --product cache/audible/us-EXAMPLEASIN/product.json \
   --artwork cache/audible/us-EXAMPLEASIN/cover.jpg \
   --title "Gerald's Game" \
   --receipt receipts/metadata-plan.json
 ```
 
-Plan the conversion first. The apostrophe remains in the embedded title even though it is absent from the output filename:
+Repeat with `--apply` after review. If the cached catalog chapters are also correct for this exact recording, plan and apply them without transcoding:
 
 ```bash
-audiobook-curator convert \
-  --selection receipts/selection.json \
-  --output "./library/Geralds Game.m4b" \
-  --title "Gerald's Game" \
-  --author "Stephen King" \
-  --narrator "Example Narrator" \
-  --artwork cache/audible/us-EXAMPLEASIN/cover.jpg \
-  --receipt receipts/conversion-plan.json
+./bin/audiobook-curator apply-chapters \
+  --file "./library/Geralds Game.m4b" \
+  --chapters cache/audible/us-EXAMPLEASIN/chapters.json \
+  --receipt receipts/chapters-plan.json
 ```
 
-After reviewing the plan, repeat it with `--apply` and a new receipt path. Then run the final gate:
+Then run the final gate. Omit `--conversion-receipt` here when editorial chapter titles replaced source-derived filenames; that mapping belongs to the post-conversion audit performed before chapter replacement:
 
 ```bash
-audiobook-curator audit \
+./bin/audiobook-curator audit \
   --file "./library/Geralds Game.m4b" \
   --full-decode \
   --receipt receipts/final-audit.json
@@ -159,7 +185,7 @@ claude --plugin-dir ./audiobook-curator
 | acoustic | the catalog sample did or did not match local audio |
 | Whisper | distributed excerpts are available for human language and story review |
 | conversion | the exact output, size, and hashes produced from preserved sources |
-| final audit | chapter structure, hashes, and optional full decode passed or need review |
+| final audit | chapter structure, optional source mapping, hashes, and optional full decode passed or need review |
 
 ## Development
 
@@ -182,7 +208,7 @@ The last three commands require the corresponding client/tooling to be installed
 - Candidate scoring ranks evidence; it never auto-accepts an edition.
 - A positive acoustic sample is strong same-recording evidence, but not proof of complete-file integrity. A negative match can be inconclusive.
 - Whisper results require human review and depend on the selected model, language hint, and the amount of spoken content in each window.
-- Conversion currently emits AAC at a configurable bitrate. Source ordering and chapter construction are deterministic, but exact audio preservation is not claimed after transcoding.
+- Multipart conversion emits AAC. The ffmpeg engine uses the requested bitrate; Audiobook Forge uses its `source` quality policy. A single existing M4B is stream-copied and its audio hash must remain identical.
 - Artwork embedding depends on ffmpeg accepting the supplied image for the MP4 container.
 - Chapter titles default to source-relative filenames. Correct editorial titles may require a reviewed selection or later metadata pass.
 

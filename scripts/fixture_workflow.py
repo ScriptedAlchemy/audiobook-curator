@@ -31,7 +31,7 @@ def run_fixture() -> None:
             ["select", "--inventory", str(inventory), "--report", str(selection)],
             ["convert", "--selection", str(selection), "--output", str(output), "--title", "Example's Book", "--author", "Example Author", "--receipt", str(conversion), "--apply"],
             ["apply-metadata", "--file", str(output), "--product", str(product), "--receipt", str(metadata), "--apply"],
-            ["audit", "--file", str(output), "--receipt", str(audit), "--full-decode"],
+            ["audit", "--file", str(output), "--conversion-receipt", str(conversion), "--receipt", str(audit), "--full-decode"],
         ]
         for command in commands:
             code = main(command)
